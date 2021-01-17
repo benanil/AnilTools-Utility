@@ -4,17 +4,17 @@ if you want async tasks you need to download unitask via (Not Required)[GitHub P
 Thanks to @beinteractive for UrFairy [GitHub Page](https://github.com/beinteractive/UrFairy)                   
 
 ### Movement
-> it allows you slowly translate between a to b with 1 lile of code
+> it allows you slowly translate between a to b with 1 line of code
 ```C#
 transform.Move(position,speed);
-transform.rotate(EulerAngleS,rotateSpeed);
-transform.Translate(vector3.up,speed);
+transform.rotate(EulerAngleS, rotateSpeed);
+transform.Translate(vector3.up, speed);
 transform.MoveX(5);
 
 // move a to b then move joined positions
-transform.Move(position,speed).Join(vector3.right).JoinRotation(eulerAngle);
-transform.Translate(vector3.up,speed).Join(Position);
-transform.MoveX(5).Join(10,MoveDirection.Y);
+transform.Move(position, speed).Join(vector3.right).JoinRotation(eulerAngle);
+transform.Translate(vector3.up, speed).Join(Position);
+transform.MoveX(5).Join(10, MoveDirection.Y);
 
 var task = transform.Move(position,speed);
 task.Join(Vector3.right * 5);
@@ -31,11 +31,11 @@ public class GameMenu : Singleton<GameMenu>
 > save whatever you want classes structs scriptableobjects with json
 ```C#
 // sync
-JsonManager.Save<YourClass>(YourObj,Path , Name);
-JsonManager.Load<YourClass>(Path,Name);
+JsonManager.Save<YourClass>(YourObj, Path , Name);
+JsonManager.Load<YourClass>(Path, Name);
 // async
-JsonManager.SaveAsync<YourClass>(YourObj,Path , Name);
-JsonManager.LoadAsync<YourClass>(Path,Name);
+JsonManager.SaveAsync<YourClass>(YourObj, Path , Name);
+JsonManager.LoadAsync<YourClass>(Path, Name);
 ```
 ### Update
 > Update While condition True
@@ -59,7 +59,7 @@ endCondition: delegate
 bool check;
 public void Start()
 {
-    RegisterUpdate.WaitUntil(() => check == true, () => Debug.Log("checked"), this);
+    RegisterUpdate.WaitUntil(() => check == true, () => Debug.Log("checked"));
 }
 ```
 ### Text Animations
