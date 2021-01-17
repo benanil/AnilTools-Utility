@@ -8,7 +8,7 @@ Thanks to @beinteractive for UrFairy [GitHub Page](https://github.com/beinteract
 ```C#
 transform.Move(position,speed);
 transform.rotate(EulerAngleS, rotateSpeed);
-transform.Translate(vector3.up, speed);
+transform.Translate(position, rotation , speed);
 transform.MoveX(5);
 
 // move a to b then move joined positions
