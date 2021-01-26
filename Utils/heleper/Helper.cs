@@ -13,8 +13,7 @@ namespace AnilTools
             {
                 if (_instance == null)
                 {
-                    _instance = GameObject.FindObjectOfType<T>();
-                    DontDestroyOnLoad(_instance);
+                    _instance = FindObjectOfType<T>();
                 }
                 return _instance;
             }

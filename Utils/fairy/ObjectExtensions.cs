@@ -14,6 +14,16 @@ namespace UrFairy
             return o;
         }
 
+        public static T IfJust<T>(this T o, Action f)
+        {
+            if (o != null)
+            {
+                f();
+            }
+
+            return o;
+        }
+
         public static T IfNothing<T>(this T o, Action f)
         {
             if (o == null)

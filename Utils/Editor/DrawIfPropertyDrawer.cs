@@ -1,7 +1,6 @@
 ﻿using AnilTools.AnilEditor;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Events;
 
 [CustomPropertyDrawer(typeof(DrawIfAttribute))]
 public class DrawIfPropertyDrawer : PropertyDrawer

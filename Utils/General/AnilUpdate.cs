@@ -11,6 +11,7 @@ namespace AnilTools
         private static AnilUpdate _instance;
 
         public static readonly List<ITickable> Tasks = new List<ITickable>();
+        public static readonly List<ITickable> FixedTasks = new List<ITickable>();
 
         private void Update()
         {
@@ -20,7 +21,28 @@ namespace AnilTools
             }
         }
 
-        public static void Register(ITickable task)
+        private void FixedUpdate()
+        {
+            for (short i = 0; i < FixedTasks.Count; i++)
+            {
+                FixedTasks[i].Tick();
+            }
+        }
+
+        public static void Remove(ITickable tickable)
+        {
+            if (Tasks.Contains(tickable))
+            {
+                Tasks.Remove(tickable);
+            }
+            else if (FixedTasks.Contains(tickable))
+            {
+                FixedTasks.Remove(tickable);
+            }
+            else Debug2.LogError("Itickable kaldırılamadı");
+        }
+
+        public static void Register(ITickable task, UpdateType updateType = UpdateType.normal)
         {
             // be assure instance exist
             Checkinstance();
@@ -33,11 +55,15 @@ namespace AnilTools
                     move.Join(((MoveTask)task).CurrentData);break;
                     case DirectionTask  drecTask:
                     drecTask.Join(((DirectionTask)task).CurrentData);break;
+                    case UpdateTask updateTask:
+                    Debug2.Log("update task exist it will add in queue");
+                    updateTask.Join(((UpdateTask)task).currentData);break;
                 }
             }
             else
             {
-                Tasks.Add(task);
+                if (updateType == UpdateType.normal)         Tasks.Add(task);
+                else if (updateType == UpdateType.fixedTime) FixedTasks.Add(task);
             }
         }
 
@@ -54,8 +80,18 @@ namespace AnilTools
     [CustomEditor(typeof(AnilUpdate))]
     public class AnilUpdateEditor : Editor
     {
+        readonly List<MoveTask> moveTasks = new List<MoveTask>();
+        readonly List<UpdateTask> updateTasks = new List<UpdateTask>();
+        readonly List<Timer> timers = new List<Timer>();
+        readonly List<WaitUntilTask> waitUntilTasks = new List<WaitUntilTask>();
+
         public override void OnInspectorGUI()
         {
+            moveTasks.Clear();
+            updateTasks.Clear();
+            timers.Clear(); 
+            waitUntilTasks.Clear();
+
             GUIStyle gUIStyle = new GUIStyle()
             {
                 fontStyle = FontStyle.Bold,
@@ -80,50 +116,62 @@ namespace AnilTools
 
             for (int i = 0; i < AnilUpdate.Tasks.Count; i++)
             {
-                if (AnilUpdate.Tasks[i] is MoveTask moveTask)
+                switch (AnilUpdate.Tasks[i])
                 {
-                    EditorGUILayout.LabelField("Move task", gUIStyle);
-                    EditorGUILayout.BeginHorizontal();
-                    EditorGUILayout.LabelField("Rotated " + moveTask.RotationReached.ToString());
-                    EditorGUILayout.TextField("Name " + UnityShortCuts.FindObjectFromInstanceID(moveTask.InstanceId()).name);
-                    EditorGUILayout.EndHorizontal();
-
-                    EditorGUILayout.BeginHorizontal();
-                    EditorGUILayout.LabelField("Moved " + moveTask.PositionReached.ToString());
-                    EditorGUILayout.EndHorizontal();
-                }
-
-                if (AnilUpdate.Tasks[i] is UpdateTask updateTask)
-                {
-                    EditorGUILayout.LabelField("Update task", gUIStyle);
-                    EditorGUILayout.BeginHorizontal();
-                    if (updateTask.InstanceId() != 0)
-                        EditorGUILayout.LabelField("Called Object: " + UnityShortCuts.FindObjectFromInstanceID(updateTask.InstanceId()).name);
-                    EditorGUILayout.LabelField("Current queue" + updateTask.dataQueue.Count.ToString());
-                    EditorGUILayout.EndHorizontal();
-                }
-
-                if (AnilUpdate.Tasks[i] is Timer timer)
-                {
-                    EditorGUILayout.LabelField("Timer", gUIStyle);
-                    EditorGUILayout.BeginHorizontal();
-                    if (timer.InstanceId() != 0)
-                        EditorGUILayout.LabelField(UnityShortCuts.FindObjectFromInstanceID(timer.InstanceId()).name);
-                    EditorGUILayout.LabelField("Remaining time");
-                    EditorGUILayout.LabelField(timer.time.ToString());
-                    EditorGUILayout.EndHorizontal();
-                }
-
-                if (AnilUpdate.Tasks[i] is WaitUntilTask waitTask)
-                {
-                    EditorGUILayout.LabelField("wait task", gUIStyle);
-                    EditorGUILayout.BeginHorizontal();
-                    EditorGUILayout.LabelField("Status: not finished");
-                    if (waitTask.InstanceId() != 0)
-                        EditorGUILayout.LabelField("Called Object: " + UnityShortCuts.FindObjectFromInstanceID(waitTask.InstanceId()).name);
-                    EditorGUILayout.EndHorizontal();
+                    case MoveTask move: moveTasks.Add(move); break;
+                    case UpdateTask update: updateTasks.Add(update); break;
+                    case Timer timerTask: timers.Add(timerTask); break;
+                    case WaitUntilTask untilTask: waitUntilTasks.Add(untilTask); break;
+                    default: break;
                 }
             }
+
+            EditorGUILayout.LabelField("Update Tasks", gUIStyle);
+            for (int i = 0; i < updateTasks.Count; i++)
+            {
+                EditorGUILayout.BeginHorizontal();
+                if (updateTasks[i].InstanceId() != 0)
+                    EditorGUILayout.LabelField("Sender: " + UnityShortCuts.FindObjectFromInstanceID(updateTasks[i].InstanceId()).name);
+                EditorGUILayout.LabelField("Queue" + updateTasks[i].dataQueue.Count.ToString());
+                EditorGUILayout.EndHorizontal();
+            }
+
+            EditorGUILayout.LabelField("Timers", gUIStyle);
+            for (int i = 0; i < timers.Count; i++)
+            {
+                var timer = timers[i];
+                EditorGUILayout.BeginHorizontal();
+                if (!string.IsNullOrEmpty(timer.name))
+                    EditorGUILayout.LabelField("name: " + timer.name);
+                if (timer.InstanceId() != 0)
+                    EditorGUILayout.LabelField("Sender: " + UnityShortCuts.FindObjectFromInstanceID(timer.InstanceId()).name);
+                EditorGUILayout.LabelField("Remaining time: " + timer.time.ToString());
+                EditorGUILayout.EndHorizontal();
+            }
+
+            EditorGUILayout.LabelField("Wait Tasks", gUIStyle);
+            for (int i = 0; i < waitUntilTasks.Count; i++)
+            {
+                var waitTask = waitUntilTasks[i];
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Status: not finished");
+                if (waitTask.InstanceId() != 0)
+                    EditorGUILayout.LabelField("Sender: " + UnityShortCuts.FindObjectFromInstanceID(waitTask.InstanceId()).name);
+                EditorGUILayout.EndHorizontal();
+            }
+
+            EditorGUILayout.LabelField("Move Tasks", gUIStyle);
+            for (int i = 0; i < moveTasks.Count; i++)
+            {
+                var moveTask = moveTasks[i];
+                EditorGUILayout.BeginHorizontal();
+                if (moveTask.InstanceId() != 0)
+                    EditorGUILayout.LabelField("Sender: " + UnityShortCuts.FindObjectFromInstanceID(moveTask.InstanceId()).name);
+                EditorGUILayout.LabelField("Rotation Finished: " + moveTask.RotationReached.ToString());
+                EditorGUILayout.LabelField("Position Finished: " + moveTask.PositionReached.ToString());
+                EditorGUILayout.EndHorizontal();
+            }
+
         }
     }
 

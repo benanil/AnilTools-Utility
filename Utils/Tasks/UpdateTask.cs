@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+
 namespace AnilTools.Update
 {
-    public struct UpdateTask : ITickable
+    public class UpdateTask : ITickable, IDisposable
     {
         public readonly Queue<ActionData> dataQueue;
         private event Action EndAction;
@@ -13,11 +14,7 @@ namespace AnilTools.Update
 
         public UpdateTask(Action updateAction, Func<bool> endCondition, Action endAction = null , int calledInstanceId = 0)
         {
-            switch (endAction){
-                case null: EndAction = () => { };  break;
-                default:   EndAction = endAction;  break;
-            }
-            
+            EndAction = endAction;
             dataQueue = new Queue<ActionData>();
             currentData = new ActionData(updateAction,endCondition);
             this.CalledInstanceId = calledInstanceId;
@@ -44,7 +41,7 @@ namespace AnilTools.Update
                 if (dataQueue.Count == 0)
                 {
                     EndAction?.Invoke();
-                    AnilUpdate.Tasks.Remove(this);
+                    Dispose();
                     return;
                 }
                 currentData = dataQueue.Dequeue();
@@ -53,9 +50,14 @@ namespace AnilTools.Update
 
         public int InstanceId() => CalledInstanceId;
 
+        public void Dispose()
+        {
+            AnilUpdate.Tasks.Remove(this);
+        }
+
         public struct ActionData
         {
-            public readonly Action updateAction;
+            public Action updateAction;
             public readonly Func<bool> endCondition;
 
             internal void Invoke()

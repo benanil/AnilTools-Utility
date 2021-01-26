@@ -7,7 +7,7 @@ namespace AnilTools
         void Tick();
         int InstanceId();
     }
-    
+
     public enum UpdateType
     {
         fixedTime = 1, normal = 2 , SlowUpdate = 4
