@@ -64,8 +64,8 @@ public void Start()
 ```
 ### Painting
 > you can paint meshrenderer and skined mesh renderer
-> add AnilMaterial to your gameObject
-> and add a raycastPainter anywhere on hierarchy 
+#### add AnilMaterial to your gameObject
+#### and add a raycastPainter anywhere on hierarchy 
 ```C#
 // or manualy
 if (Mathmatic.RaycastFromCamera(out RaycastHit hit)
