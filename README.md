@@ -62,6 +62,15 @@ public void Start()
     RegisterUpdate.WaitUntil(() => check == true, () => Debug.Log("checked"));
 }
 ```
+### Painting
+> you can paint meshrenderer and skined mesh renderer
+> add AnilMaterial to your gameObject
+> and add a raycastPainter anywhere on hierarchy 
+```C#
+// or manualy
+if (Mathmatic.RaycastFromCamera(out RaycastHit hit)
+Painter.PaitCircale(hit, radius, color);
+```
 ### Text Animations
 > animate texts
 ```C#
