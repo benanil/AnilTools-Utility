@@ -1,7 +1,7 @@
 ﻿// https://github.com/Cysharp/UniTask
 // bu özelliği aktif etmek için yukarıdaki asseti indiriniz
 // aksi taktirde allttaki satırı commnt satırı yapınız
-#define HasCysharpAsset
+//#define HasCysharpAsset
 #if HasCysharpAsset
 using Cysharp.Threading.Tasks;
 #endif
