@@ -1,7 +1,7 @@
 # AnilTools-Utility                                                                                     
 this utils developed 4 months, it has a lot of helper functions witch can help you a lot                                  
 if you want async tasks you need to download unitask via (Not Required)[GitHub Page](https://github.com/Cysharp/UniTask#install-via-git-url)                    
-Thanks to @beinteractive for UrFairy [GitHub Page](https://github.com/beinteractive/UrFairy)                   
+Thanks to @beinteractive for UrFairy [GitHub Page](https://github.com/beinteractive/UrFairy) not: if you saw issues just delete them they are probably unitask codes           
 
 ### Movement
 > it allows you slowly translate between a to b with 1 line of code
