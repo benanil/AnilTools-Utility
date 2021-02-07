@@ -234,7 +234,7 @@ namespace AnilTools.Save
             return objectToLoad;
         }
         #endregion
-
+#endif
         private static void CheckPath(string path)
         {
             if (!File.Exists(SavesFolder))
@@ -247,7 +247,5 @@ namespace AnilTools.Save
             }
         }
 
-
-#endif
     }
 }
