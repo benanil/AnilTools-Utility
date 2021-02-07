@@ -1,24 +1,22 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace AnilTools.Move
 {
-    // Todo : add Ease
+    // Todo : add Ease. complated
 
     public class MoveTask : ITickable
     {
         internal const byte DefaultSpeed = 3;
         internal const byte DefaultRotationSpeed = 2;
-        private const byte RotationTolerance = 1;
-        private const float PositionTolerance = .01f;
 
         public readonly Transform from;
 
         private readonly Queue<MoveData> queue;
-        private readonly MoveType moveType = MoveType.towards;
-        private event Action EndAction;
+        private readonly List<Action> EndAction = new List<Action>();
         internal MoveData CurrentData;
+        private readonly MoveType moveType = MoveType.towards;
 
         /// <summary>
         /// <param><b>Move Speed: </b></param>
@@ -28,35 +26,48 @@ namespace AnilTools.Move
         public float RotateSpeed = DefaultRotationSpeed;
 
         // editörde gözükmesi için public yapıldı
-        public bool RotationReached => Quaternion.Angle(from.rotation, Quaternion.Euler(CurrentData.eulerAngles)) < RotationTolerance || CurrentData.eulerAngles == Vector3.zero;
-        public bool PositionReached => from.Distance(CurrentData.pos) < PositionTolerance || CurrentData.pos == Vector3.zero;
+        public bool RotationReached
+        {
+            get
+            {
+                if (Quaternion.Angle(from.rotation, Quaternion.Euler(CurrentData.eulerAngles)) < Mathf.Epsilon || CurrentData.eulerAngles == Vector3.zero)
+                {
+                    from.eulerAngles = CurrentData.eulerAngles; 
+                    return true;
+                }
+                return false;
+            }
+        }
 
-        /// it will add position to transform
+        public bool PositionReached => from.Distance(CurrentData.pos) < Mathf.Epsilon || CurrentData.pos == Vector3.zero;
+
+        /// <summary> it will add position to transform</summary>
         private readonly bool IsPlus = false;
         private readonly bool IsLocal = false;
+
+        public AnimationCurve animationCurve;
+        private float timer;
 
         public void Tick()
         {
             if (!PositionReached){
-                switch (moveType)
+
+                if (moveType == MoveType.lerp)
                 {
-                    case MoveType.lerp:
-                        if (IsLocal){
-                            from.localPosition = Vector3.Lerp(from.localPosition, CurrentData.pos, MoveSpeed * Time.deltaTime);
-                        }else{
-                            from.position = Vector3.Lerp(from.position, CurrentData.pos, MoveSpeed * Time.deltaTime);
-                        }
-                        break;
-                    case MoveType.towards:
-                        if (IsLocal){
-                            from.localPosition = Vector3.MoveTowards(from.localPosition, CurrentData.pos, MoveSpeed * Time.deltaTime);
-                        }else{
-                            from.position = Vector3.MoveTowards(from.position, CurrentData.pos, MoveSpeed * Time.deltaTime);
-                        }
-                        break;
-                    default:
-                        from.position = Vector3.MoveTowards(from.position, CurrentData.pos, MoveSpeed * Time.deltaTime);
-                        break;
+                    if (IsLocal) from.localPosition  = Vector3.Lerp(from.localPosition, CurrentData.pos, MoveSpeed * Time.deltaTime);
+                    else         from.position       = Vector3.Lerp(from.position, CurrentData.pos, MoveSpeed * Time.deltaTime);
+                }
+                else if (moveType == MoveType.towards)
+                {
+                    if (IsLocal) from.localPosition  = Vector3.MoveTowards(from.localPosition, CurrentData.pos, MoveSpeed * Time.deltaTime);
+                    else from.position               = Vector3.MoveTowards(from.position, CurrentData.pos, MoveSpeed * Time.deltaTime);
+                }
+                else if (moveType == MoveType.Curve)
+                {
+                    if (IsLocal) from.localPosition  = Vector3.Lerp(from.localPosition, CurrentData.pos, animationCurve.Evaluate(timer / MoveSpeed));
+                    else         from.position       = Vector3.Lerp(from.position, CurrentData.pos     , animationCurve.Evaluate(timer / MoveSpeed));
+                    
+                    timer += Time.deltaTime;
                 }
             }
 
@@ -68,29 +79,18 @@ namespace AnilTools.Move
             {
                 if (queue.Count == 0)
                 {
-                    EndAction?.Invoke();
+                    EndAction.ForEach(x => x?.Invoke());
                     AnilUpdate.Tasks.Remove(this);
-                    Debug.Log("finish");
                     return;
                 }
                 CurrentData = queue.Dequeue();
-                if (IsPlus)
-                {
-                    if (IsLocal){
-                        CurrentData.pos += from.localPosition;
-                        CurrentData.eulerAngles += from.localEulerAngles;
-                    }
-                    else{
-                        CurrentData.pos += from.position;
-                        CurrentData.eulerAngles += from.eulerAngles;
-                    }
-                }
+                CurrentData = FillCurrentData(CurrentData.pos, CurrentData.eulerAngles);
             }
         }
 
         public void AddFinishEvent(Action action)
         {
-            EndAction += action;
+            EndAction.Add(action);
         }
 
         public MoveTask Join(Vector3 Position)
@@ -117,19 +117,56 @@ namespace AnilTools.Move
             return this;
         }
 
+        private MoveData FillCurrentData(Vector3 position, Vector3 eulerAngles)
+        {
+            if (IsPlus){
+                if (IsLocal){
+                    position += from.localPosition;
+                    eulerAngles += from.localEulerAngles;
+                }
+                else{
+                    position += from.position;
+                    eulerAngles += from.eulerAngles;
+                }
+            }
+
+            return new MoveData(position, eulerAngles);
+        }
+
         public MoveTask(Transform from, Transform to, float speed = DefaultSpeed, float rotateSpeed = DefaultRotationSpeed
                         ,MoveType moveType = MoveType.towards, bool isPlus = false , bool isLocal = false , Action endAction = null)
         {
+
             queue = new Queue<MoveData>();
+            this.from = from;
 
-            EndAction = CheckAction(endAction);
+            CheckAction(endAction);
 
-            CurrentData = new MoveData(to.position, to.eulerAngles);
             IsPlus = isPlus;
+
+            CurrentData = FillCurrentData(to.position, to.eulerAngles);
 
             this.IsLocal = isLocal;
             this.moveType = moveType;
+            this.MoveSpeed = speed;
+            this.RotateSpeed = rotateSpeed;
+        }
+
+        public MoveTask(Transform from, Vector3 to, AnimationCurve animationCurve , float speed = DefaultSpeed , float rotateSpeed = DefaultRotationSpeed
+                        , MoveType moveType = MoveType.towards, bool isPlus = false, bool isLocal = false, Action endAction = null)
+        {
+            queue = new Queue<MoveData>();
             this.from = from;
+            IsPlus = isPlus;
+
+            CheckAction(endAction);
+
+            CurrentData = FillCurrentData(to, Vector3.zero);
+
+            this.animationCurve = animationCurve;
+
+            this.IsLocal = isLocal;
+            this.moveType = moveType;
             this.MoveSpeed = speed;
             this.RotateSpeed = rotateSpeed;
         }
@@ -138,15 +175,15 @@ namespace AnilTools.Move
                         , MoveType moveType = MoveType.towards, bool isPlus = false, bool isLocal = false, Action endAction = null)
         {
             queue = new Queue<MoveData>();
-
-            EndAction = CheckAction(endAction);
-
-            CurrentData = new MoveData(pos, rot);
+            this.from = from;
             IsPlus = isPlus;
+
+
+            CheckAction(endAction);
+            CurrentData = FillCurrentData(pos, rot);
 
             this.IsLocal = isLocal;
             this.moveType = moveType;
-            this.from = from;
             this.MoveSpeed = speed;
             this.RotateSpeed = rotateSpeed;
         }
@@ -155,15 +192,15 @@ namespace AnilTools.Move
                         bool isPlus = false, bool isLocal = false , Action endAction = null)
         {
             queue = new Queue<MoveData>();
+            this.from = from;
 
-            EndAction = CheckAction(endAction);
+            CheckAction(endAction);
 
             CurrentData = new MoveData(to, Vector3.zero);
             
             IsPlus = isPlus;
             this.IsLocal = isLocal;
             this.moveType = moveType;
-            this.from = from;
             this.MoveSpeed = speed;
         }
 
@@ -171,21 +208,22 @@ namespace AnilTools.Move
                        , bool isPlus = false, bool isLocal = false , Action endAction = null)
         {
             queue = new Queue<MoveData>();
+            this.from = from;
             
-            CurrentData = new MoveData(Vector3.zero, euler);
-            EndAction = CheckAction(endAction);
+            IsPlus = isPlus;
+
+            CurrentData = FillCurrentData(Vector3.zero, euler);
+            CheckAction(endAction);
 
             this.IsLocal = isLocal;
-            IsPlus = isPlus;
-            this.from = from;
             this.RotateSpeed = rotateSpeed;
         }
 
-        private static Action CheckAction(Action action)
+        private void CheckAction(Action action)
         {
-            switch (action){
-                case null: return () => { };
-                default:   return action;
+            if (action != null)
+            {
+                EndAction.Add(action);
             }
         }
 
@@ -194,7 +232,7 @@ namespace AnilTools.Move
             return from.GetInstanceID();
         }
 
-        public struct MoveData
+        public class MoveData
         {
             public Vector3 pos;
             public Vector3 eulerAngles;
@@ -214,3 +252,4 @@ namespace AnilTools.Move
 
     }
 }
+
