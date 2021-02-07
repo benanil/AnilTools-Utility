@@ -20,6 +20,7 @@ public static class Debug2
     public static void LogSlow(object message,int speed)
     {
 #if UNITY_EDITOR
+    /* requires unitask
         UniTask.Create(async () =>
         {
             if (messaged == false)
@@ -30,6 +31,7 @@ public static class Debug2
                 messaged = false;
             }
         });
+       */
 #endif
     }
 
