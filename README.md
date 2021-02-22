@@ -57,6 +57,7 @@ endCondition: delegate
 #### No Need Couroutines
 ```C#
    this.Delay(1f,() => YourAction()); // waits 1 second then does action
+   this.Delay(1f,() => YourAction()).Add(2f,() => /*your action*/);
    this.Delay(10,() => YourAction()); // waits 10 frame then does action
 ```
 
