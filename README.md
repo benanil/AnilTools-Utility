@@ -24,7 +24,7 @@ task.AddFinishEvent(() => Debug.Log("movement finish"));
 > create Singleton very fast
 ```C#
 // write your own monobehaviour's name instead of GameMenu
-// you can reach this by type GameMenu.instance
+// you can reach this class by type GameMenu.instance
 public class GameMenu : Singleton<GameMenu>
 ```
 ### Save Load
